@@ -1,3 +1,8 @@
+import sys
+import types
+
+# Fix for Python 3.13+ (imghdr removed)
+sys.modules['imghdr'] = types.ModuleType('imghdr')
 import streamlit as st
 import pickle
 import re
