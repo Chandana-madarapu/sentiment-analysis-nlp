@@ -10,7 +10,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-# Download NLTK data
+# Download NLTK
 nltk.download('punkt')
 nltk.download('stopwords')
 
@@ -18,20 +18,18 @@ nltk.download('stopwords')
 model = pickle.load(open("model.pkl", "rb"))
 vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 
-# 🔥 FIX: keep negation words
+# Keep negation words
 stop_words = set(stopwords.words('english')) - {"not", "no", "never"}
 
-# 🔥 FIX: better preprocessing
 def clean_text(text):
     text = text.lower()
     text = re.sub(r'[^a-zA-Z\s]', '', text)
 
     tokens = word_tokenize(text)
 
-    # handle negation (not good → not_good)
+    # handle negation
     new_tokens = []
     skip = False
-
     for i in range(len(tokens)):
         if skip:
             skip = False
@@ -47,105 +45,60 @@ def clean_text(text):
 
     return " ".join(new_tokens)
 
-# ---------- PAGE CONFIG ----------
-st.set_page_config(
-    page_title="🎬 Sentiment Analyzer",
-    page_icon="🎬",
-    layout="centered"
-)
+# ---------- PAGE ----------
+st.set_page_config(page_title="🎬 Sentiment Analyzer", layout="centered")
 
-# ---------- CUSTOM CSS ----------
-st.markdown("""
-<style>
-body {
-    background-color: #0f172a;
-}
-.main {
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    color: white;
-}
-.title {
-    text-align: center;
-    font-size: 42px;
-    font-weight: bold;
-    color: #38bdf8;
-}
-.subtitle {
-    text-align: center;
-    font-size: 18px;
-    color: #cbd5f5;
-    margin-bottom: 25px;
-}
-.stTextArea textarea {
-    border-radius: 12px;
-    padding: 12px;
-    font-size: 16px;
-}
-.stButton button {
-    background: linear-gradient(90deg, #38bdf8, #6366f1);
-    color: white;
-    border-radius: 12px;
-    height: 50px;
-    width: 100%;
-    font-size: 18px;
-    font-weight: bold;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ---------- HEADER ----------
-st.markdown('<div class="title">🎬 Movie Sentiment Analyzer</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Analyze reviews using NLP & Machine Learning</div>', unsafe_allow_html=True)
-
-# ---------- EXAMPLES ----------
-st.markdown("### 📝 Enter or Choose a Review")
-
-col1, col2 = st.columns(2)
-
-if col1.button("👍 Use Positive Example"):
-    st.session_state["input"] = "This movie was absolutely amazing and inspiring!"
-
-if col2.button("👎 Use Negative Example"):
-    st.session_state["input"] = "This was not good at all and very boring."
+st.title("🎬 Movie Sentiment Analyzer")
+st.caption("Analyze one or multiple reviews")
 
 # ---------- INPUT ----------
 user_input = st.text_area(
-    "✍️ Write your review",
+    "Write review (or multiple reviews - one per line)",
     value=st.session_state.get("input", ""),
     height=150
 )
 
-# ---------- SINGLE BUTTON (FIXED) ----------
-if st.button("🎯 Predict Sentiment"):
+# ---------- PREDICT ----------
+if st.button("Analyze"):
 
     if user_input.strip() == "":
-        st.warning("⚠️ Please enter a review first!")
+        st.warning("Enter a review first")
     else:
-        with st.spinner("Analyzing sentiment... ⏳"):
-            cleaned = clean_text(user_input)
+        reviews = user_input.split("\n")
+
+        st.markdown("### Results")
+
+        for review in reviews:
+            if review.strip() == "":
+                continue
+
+            cleaned = clean_text(review)
             vec = vectorizer.transform([cleaned])
 
             pred = model.predict(vec)[0]
             prob = model.predict_proba(vec)[0].max()
+            confidence = round(prob * 100, 2)
 
-        st.markdown("---")
+            if pred == 1:
+                st.success(f"👍 {review}\n\nPositive ({confidence}%)")
+            else:
+                st.error(f"👎 {review}\n\nNegative ({confidence}%)")
 
-        confidence = round(prob * 100, 2)
+# ---------- EXAMPLES (MOVED BELOW RESULTS) ----------
+st.markdown("---")
+st.markdown("**Try examples:**")
 
-        if pred == 1:
-            st.success(f"🎉 Positive Review! 😊\nConfidence: {confidence}%")
-            st.progress(int(confidence))
-        else:
-            st.error(f"😞 Negative Review!\nConfidence: {confidence}%")
-            st.progress(int(confidence))
+col1, col2 = st.columns(2)
+
+if col1.button("👍 Positive Example"):
+    st.session_state["input"] = "This movie was amazing and inspiring!"
+
+if col2.button("👎 Negative Example"):
+    st.session_state["input"] = "This movie was not good and very boring."
 
 # ---------- FOOTER ----------
 st.markdown("---")
 st.markdown(
-    """
-    <center style='color:#94a3b8; font-size:14px;'>
-    Built with ❤️ by <b style='color:#38bdf8;'>MADARAPU RAVICHANDANA</b> 🚀
-    </center>
-    """,
+    "<center style='color:gray;'>Built by MADARAPU RAVICHANDANA 🚀</center>",
     unsafe_allow_html=True
 )
