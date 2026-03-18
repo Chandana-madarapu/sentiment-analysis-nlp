@@ -84,17 +84,25 @@ st.markdown('<div class="title">🎬 Movie Sentiment Analyzer</div>', unsafe_all
 st.markdown('<div class="subtitle">Analyze reviews using NLP & Machine Learning</div>', unsafe_allow_html=True)
 
 # ---------- EXAMPLES ----------
-st.markdown("### 💡 Try Examples")
+st.markdown("### 📝 Step 1: Enter or Choose a Review")
+
 col1, col2 = st.columns(2)
 
-if col1.button("👍 Positive Example"):
+if col1.button("👍 Use Positive Example"):
     st.session_state["input"] = "This movie was absolutely amazing and inspiring!"
 
-if col2.button("👎 Negative Example"):
+if col2.button("👎 Use Negative Example"):
     st.session_state["input"] = "Worst movie ever, totally boring and waste of time."
 
-# ---------- INPUT ----------
-user_input = st.text_area("✍️ Enter your movie review:", value=st.session_state.get("input", ""))
+user_input = st.text_area(
+    "✍️ Write your review here and then click Predict 👇",
+    value=st.session_state.get("input", ""),
+    height=150
+)
+
+st.markdown("### 🚀 Step 2: Click to Predict")
+
+predict = st.button("🎯 Predict Sentiment")
 
 # ---------- PREDICTION ----------
 if st.button("🚀 Predict Sentiment"):
