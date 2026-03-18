@@ -1,27 +1,47 @@
 import streamlit as st
 import pickle
 import re
+import nltk
+import os
+
+# ✅ Setup NLTK data directory
+nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
+if not os.path.exists(nltk_data_path):
+    os.makedirs(nltk_data_path)
+
+nltk.data.path.append(nltk_data_path)
+
+# ✅ Download ONLY if missing
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt', download_dir=nltk_data_path)
+
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords', download_dir=nltk_data_path)
+
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
 # Load model
 model = pickle.load(open("model.pkl", "rb"))
 vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 
-# Manual stopwords (no nltk dependency)
-stop_words = {
-    "a","an","the","and","or","but","if","while","is","am","are","was","were",
-    "be","been","being","have","has","had","do","does","did","of","to","in",
-    "for","on","with","as","by","at","from","this","that","it","i","you","he",
-    "she","they","we","me","him","her","them","my","your","his","their"
-}
+stop_words = set(stopwords.words('english'))
 
+# Clean text
 def clean_text(text):
     text = text.lower()
     text = re.sub(r'[^a-zA-Z\s]', '', text)
-    tokens = text.split()
+    tokens = word_tokenize(text)
     tokens = [w for w in tokens if w not in stop_words]
     return " ".join(tokens)
 
 # UI
+st.set_page_config(page_title="Sentiment Analyzer")
+
 st.title("🎬 Movie Sentiment Analyzer")
 
 user_input = st.text_area("Enter your review:")
