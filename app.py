@@ -27,116 +27,86 @@ def clean_text(text):
     tokens = [w for w in tokens if w not in stop_words and len(w) > 2]
     return " ".join(tokens)
 
-# ---------- SIMPLE EXPLANATION FUNCTION ----------
-def explain_sentiment(text):
-    positive_words = ["good","amazing","great","love","excellent","awesome","best"]
-    negative_words = ["bad","worst","boring","waste","poor","hate","terrible"]
-
-    text = text.lower()
-    
-    found_pos = [w for w in positive_words if w in text]
-    found_neg = [w for w in negative_words if w in text]
-
-    if found_pos:
-        return f"Detected positive words: {', '.join(found_pos)}"
-    elif found_neg:
-        return f"Detected negative words: {', '.join(found_neg)}"
-    else:
-        return "Sentiment based on overall language pattern."
-
 # ---------- PAGE ----------
-st.set_page_config(page_title="AI Sentiment Analyzer", layout="centered")
+st.set_page_config(page_title="Sentiment Analyzer", layout="centered")
 
 # ---------- STYLE ----------
 st.markdown("""
 <style>
-body { background: #020617; }
 .title {
     text-align: center;
     font-size: 34px;
     font-weight: 600;
-    color: white;
 }
 .subtitle {
     text-align: center;
     color: #94a3b8;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
-.user-msg {
-    background: #1e293b;
-    padding: 12px;
-    border-radius: 12px;
-    margin: 10px 0;
-    color: white;
+textarea {
+    border-radius: 10px !important;
 }
-.bot-msg {
-    background: #0ea5e9;
-    padding: 12px;
-    border-radius: 12px;
-    margin: 10px 0;
-    color: white;
+.stButton button {
+    border-radius: 8px;
+    height: 45px;
+}
+.result {
+    padding: 10px;
+    border-radius: 8px;
+    margin: 5px 0;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------- HEADER ----------
-st.markdown('<div class="title">🎬 AI Sentiment Analyzer</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Understand movie reviews instantly</div>', unsafe_allow_html=True)
-
-# ---------- SESSION ----------
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-# ---------- DISPLAY CHAT ----------
-for chat in st.session_state.history:
-    if chat["role"] == "user":
-        st.markdown(f"<div class='user-msg'>🧑 {chat['text']}</div>", unsafe_allow_html=True)
-    else:
-        st.markdown(f"<div class='bot-msg'>🤖 {chat['text']}</div>", unsafe_allow_html=True)
+st.markdown('<div class="title">🎬 Sentiment Analyzer</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Analyze one or multiple reviews</div>', unsafe_allow_html=True)
 
 # ---------- INPUT ----------
-user_input = st.text_area("Type your review", height=100)
+user_input = st.text_area(
+    "Write your reviews (one per line)",
+    placeholder="Example:\nThis movie was amazing!\nWorst movie ever...",
+    height=150
+)
 
-# ---------- ANALYZE ----------
+# ---------- PREDICT ----------
 if st.button("Analyze"):
     if user_input.strip() == "":
-        st.warning("Enter a review")
+        st.warning("Enter at least one review")
     else:
-        st.session_state.history.append({"role": "user", "text": user_input})
+        reviews = user_input.split("\n")
 
-        cleaned = clean_text(user_input)
-        vec = vectorizer.transform([cleaned])
+        st.markdown("### Results")
 
-        pred = model.predict(vec)[0]
-        prob = model.predict_proba(vec)[0].max()
-        confidence = round(prob * 100, 2)
+        for review in reviews:
+            if review.strip() == "":
+                continue
 
-        explanation = explain_sentiment(user_input)
+            cleaned = clean_text(review)
+            vec = vectorizer.transform([cleaned])
 
-        if pred == 1:
-            response = f"🎉 Positive Sentiment\nConfidence: {confidence}%\n\n💡 {explanation}"
-        else:
-            response = f"😞 Negative Sentiment\nConfidence: {confidence}%\n\n💡 {explanation}"
+            pred = model.predict(vec)[0]
+            prob = model.predict_proba(vec)[0].max()
+            confidence = round(prob * 100, 2)
 
-        st.session_state.history.append({"role": "bot", "text": response})
-        st.rerun()
-
-# ---------- EXAMPLES (NOW AT BOTTOM 👇) ----------
-st.markdown("---")
-st.markdown("**Try examples:**")
-
-col1, col2 = st.columns(2)
-
-if col1.button("✨ Amazing movie"):
-    st.session_state.history.append({"role": "user", "text": "This movie was absolutely amazing!"})
-    st.rerun()
-
-if col2.button("💔 Waste of time"):
-    st.session_state.history.append({"role": "user", "text": "This movie was boring and a waste of time."})
-    st.rerun()
+            if pred == 1:
+                st.markdown(
+                    f"<div class='result' style='background:#dcfce7;'>"
+                    f"👍 {review}<br><b>Positive ({confidence}%)</b>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f"<div class='result' style='background:#fee2e2;'>"
+                    f"👎 {review}<br><b>Negative ({confidence}%)</b>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
 
 # ---------- FOOTER ----------
+st.markdown("---")
 st.markdown(
-    "<center style='color:#64748b;margin-top:20px;'>Built by MADARAPU RAVICHANDANA 🚀</center>",
+    "<center style='color:gray;font-size:13px;'>Built by MADARAPU RAVICHANDANA 🚀</center>",
     unsafe_allow_html=True
 )
