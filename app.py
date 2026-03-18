@@ -1,21 +1,19 @@
+import sys
+import types
+sys.modules['imghdr'] = types.ModuleType('imghdr')
+
 import streamlit as st
 import pickle
 import re
 import nltk
-import os
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
-
-# NLTK setup
-nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
-nltk.data.path.append(nltk_data_path)
-
-nltk.download('punkt', download_dir=nltk_data_path)
-nltk.download('punkt_tab', download_dir=nltk_data_path)
-nltk.download('stopwords', download_dir=nltk_data_path)
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+
+# Download NLTK data
+nltk.download('punkt')
+nltk.download('punkt_tab')
+nltk.download('stopwords')
 
 # Load model
 model = pickle.load(open("model.pkl", "rb"))
@@ -27,53 +25,106 @@ def clean_text(text):
     text = text.lower()
     text = re.sub(r'[^a-zA-Z\s]', '', text)
     tokens = word_tokenize(text)
-    tokens = [w for w in tokens if w not in stop_words]
+    tokens = [w for w in tokens if w not in stop_words and len(w) > 2]
     return " ".join(tokens)
 
-# UI
-st.set_page_config(page_title="Sentiment Analyzer", layout="centered")
+# ---------- PAGE CONFIG ----------
+st.set_page_config(
+    page_title="🎬 Sentiment Analyzer",
+    page_icon="🎬",
+    layout="centered"
+)
 
-st.title("🎬 Advanced Sentiment Analyzer")
-st.write("Analyze reviews with NLP + Visualization")
+# ---------- CUSTOM CSS ----------
+st.markdown("""
+<style>
+body {
+    background-color: #0f172a;
+}
+.main {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
+}
+.title {
+    text-align: center;
+    font-size: 42px;
+    font-weight: bold;
+    color: #38bdf8;
+}
+.subtitle {
+    text-align: center;
+    font-size: 18px;
+    color: #cbd5f5;
+    margin-bottom: 25px;
+}
+.stTextArea textarea {
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 16px;
+}
+.stButton button {
+    background: linear-gradient(90deg, #38bdf8, #6366f1);
+    color: white;
+    border-radius: 12px;
+    height: 50px;
+    width: 100%;
+    font-size: 18px;
+    font-weight: bold;
+}
+.result-box {
+    text-align: center;
+    font-size: 22px;
+    margin-top: 20px;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# Input
-user_input = st.text_area("Enter one or multiple reviews (one per line):")
+# ---------- HEADER ----------
+st.markdown('<div class="title">🎬 Movie Sentiment Analyzer</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Analyze reviews using NLP & Machine Learning</div>', unsafe_allow_html=True)
 
-if st.button("Analyze"):
+# ---------- EXAMPLES ----------
+st.markdown("### 💡 Try Examples")
+col1, col2 = st.columns(2)
+
+if col1.button("👍 Positive Example"):
+    st.session_state["input"] = "This movie was absolutely amazing and inspiring!"
+
+if col2.button("👎 Negative Example"):
+    st.session_state["input"] = "Worst movie ever, totally boring and waste of time."
+
+# ---------- INPUT ----------
+user_input = st.text_area("✍️ Enter your movie review:", value=st.session_state.get("input", ""))
+
+# ---------- PREDICTION ----------
+if st.button("🚀 Predict Sentiment"):
     if user_input.strip() == "":
-        st.warning("Enter some text!")
+        st.warning("⚠️ Please enter a review first!")
     else:
-        reviews = user_input.split("\n")
-        results = []
-        all_text = ""
-
-        for review in reviews:
-            cleaned = clean_text(review)
+        with st.spinner("Analyzing sentiment... ⏳"):
+            cleaned = clean_text(user_input)
             vec = vectorizer.transform([cleaned])
+
             pred = model.predict(vec)[0]
-            results.append(pred)
-            all_text += " " + cleaned
+            prob = model.predict_proba(vec)[0].max()
 
-        # Display results
-        for i, review in enumerate(reviews):
-            if results[i] == 1:
-                st.success(f"👍 {review}")
-            else:
-                st.error(f"👎 {review}")
+        st.markdown("---")
 
-        # 📊 Sentiment chart
-        st.subheader("📊 Sentiment Distribution")
-        pos = results.count(1)
-        neg = results.count(0)
+        # RESULT DISPLAY
+        if pred == 1:
+            st.success(f"🎉 Positive Review! 😊\nConfidence: {round(prob*100,2)}%")
+            st.progress(int(prob * 100))
+        else:
+            st.error(f"😞 Negative Review!\nConfidence: {round(prob*100,2)}%")
+            st.progress(int(prob * 100))
 
-        st.bar_chart({"Positive": pos, "Negative": neg})
-
-        # ☁️ WordCloud
-        st.subheader("☁️ Word Cloud")
-        wordcloud = WordCloud(width=800, height=400, background_color='white').generate(all_text)
-
-        fig, ax = plt.subplots()
-        ax.imshow(wordcloud)
-        ax.axis("off")
-
-        st.pyplot(fig)
+# ---------- FOOTER ----------
+st.markdown("---")
+st.markdown(
+    """
+    <center style='color:#94a3b8; font-size:14px;'>
+    Built with ❤️ by <b style='color:#38bdf8;'>MADARAPU RAVICHANDANA</b> 🚀
+    </center>
+    """,
+    unsafe_allow_html=True
+)
