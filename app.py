@@ -91,16 +91,32 @@ if st.button("Analyze"):
 
             if pred == 1:
                 st.markdown(
-                    f"<div class='result' style='background:#dcfce7;'>"
-                    f"👍 {review}<br><b>Positive ({confidence}%)</b>"
-                    f"</div>",
+                    f"""
+                    <div style="
+                    background: linear-gradient(90deg,#16a34a,#22c55e);
+                    padding:15px;
+                    border-radius:12px;
+                    color:white;
+                    margin-bottom:10px;">
+                    👍 <b>{review}</b><br>
+                    Positive • {confidence}%
+                    </div>
+                    """,
                     unsafe_allow_html=True
                 )
             else:
                 st.markdown(
-                    f"<div class='result' style='background:#fee2e2;'>"
-                    f"👎 {review}<br><b>Negative ({confidence}%)</b>"
-                    f"</div>",
+                    f"""
+                    <div style="
+                    background: linear-gradient(90deg,#dc2626,#ef4444);
+                    padding:15px;
+                    border-radius:12px;
+                    color:white;
+                    margin-bottom:10px;">
+                    👎 <b>{review}</b><br>
+                    Negative • {confidence}%
+                    </div>
+                    """,
                     unsafe_allow_html=True
                 )
 
