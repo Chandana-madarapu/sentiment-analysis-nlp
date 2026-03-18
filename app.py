@@ -27,121 +27,110 @@ def clean_text(text):
     tokens = [w for w in tokens if w not in stop_words and len(w) > 2]
     return " ".join(tokens)
 
-# ---------- PAGE CONFIG ----------
-st.set_page_config(
-    page_title="Sentiment Analyzer",
-    page_icon="🎬",
-    layout="centered"
-)
+# ---------- PAGE ----------
+st.set_page_config(page_title="AI Sentiment Analyzer", layout="centered")
 
-# ---------- PREMIUM CSS ----------
+# ---------- STYLE ----------
 st.markdown("""
 <style>
 body {
-    background: linear-gradient(135deg, #0f172a, #020617);
+    background: #020617;
 }
 
 /* Title */
 .title {
     text-align: center;
-    font-size: 38px;
+    font-size: 34px;
     font-weight: 600;
     color: white;
+    margin-bottom: 5px;
 }
 .subtitle {
     text-align: center;
-    font-size: 16px;
     color: #94a3b8;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
 }
 
-/* Card */
-.card {
-    background: rgba(255,255,255,0.05);
-    padding: 25px;
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0px 4px 30px rgba(0,0,0,0.3);
-}
-
-/* Buttons */
-.stButton button {
-    border-radius: 10px;
-    height: 45px;
-    font-weight: 500;
-    background: linear-gradient(90deg, #38bdf8, #6366f1);
+/* Chat bubbles */
+.user-msg {
+    background: #1e293b;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin: 10px 0;
     color: white;
-    border: none;
+}
+.bot-msg {
+    background: #0ea5e9;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin: 10px 0;
+    color: white;
 }
 
-/* Textbox */
+/* Input */
 textarea {
-    border-radius: 10px !important;
-}
-
-/* Example buttons */
-.example-btn button {
-    background: #1e293b !important;
-    color: #cbd5f5 !important;
+    border-radius: 12px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------- HEADER ----------
-st.markdown('<div class="title">🎬 Movie Sentiment Analyzer</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Analyze reviews using NLP & Machine Learning</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">🎬 AI Sentiment Analyzer</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Understand movie reviews instantly</div>', unsafe_allow_html=True)
 
-# ---------- CARD START ----------
-st.markdown('<div class="card">', unsafe_allow_html=True)
+# ---------- SESSION MEMORY ----------
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+# ---------- DISPLAY CHAT ----------
+for chat in st.session_state.history:
+    if chat["role"] == "user":
+        st.markdown(f"<div class='user-msg'>🧑 {chat['text']}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div class='bot-msg'>🤖 {chat['text']}</div>", unsafe_allow_html=True)
 
 # ---------- INPUT ----------
-user_input = st.text_area(
-    "Write your review",
-    value=st.session_state.get("input", ""),
-    height=120
-)
+user_input = st.text_area("Type your review", height=100)
 
-# ---------- EXAMPLES ----------
-st.markdown("**Quick examples:**")
+# ---------- QUICK EXAMPLES ----------
+st.markdown("**Try:**")
 
 col1, col2 = st.columns(2)
 
 if col1.button("✨ Amazing movie"):
-    st.session_state["input"] = "This movie was absolutely amazing and inspiring!"
+    user_input = "This movie was absolutely amazing and inspiring!"
 
 if col2.button("💔 Waste of time"):
-    st.session_state["input"] = "This was the worst movie ever and very boring."
+    user_input = "This was the worst movie ever and very boring."
 
 # ---------- PREDICT ----------
-if st.button("🚀 Analyze Sentiment"):
+if st.button("Analyze"):
     if user_input.strip() == "":
-        st.warning("Enter a review first")
+        st.warning("Enter a review")
     else:
-        with st.spinner("Analyzing..."):
-            cleaned = clean_text(user_input)
-            vec = vectorizer.transform([cleaned])
+        # Save user message
+        st.session_state.history.append({"role": "user", "text": user_input})
 
-            pred = model.predict(vec)[0]
-            prob = model.predict_proba(vec)[0].max()
+        cleaned = clean_text(user_input)
+        vec = vectorizer.transform([cleaned])
 
-        st.markdown("---")
+        pred = model.predict(vec)[0]
+        prob = model.predict_proba(vec)[0].max()
 
         confidence = round(prob * 100, 2)
 
         if pred == 1:
-            st.success(f"🎉 Positive Sentiment")
-            st.markdown(f"Confidence: **{confidence}%**")
-            st.progress(int(confidence))
+            response = f"🎉 Positive Sentiment\nConfidence: {confidence}%"
         else:
-            st.error(f"😞 Negative Sentiment")
-            st.markdown(f"Confidence: **{confidence}%**")
-            st.progress(int(confidence))
+            response = f"😞 Negative Sentiment\nConfidence: {confidence}%"
 
-# ---------- CARD END ----------
-st.markdown('</div>', unsafe_allow_html=True)
+        # Save bot response
+        st.session_state.history.append({"role": "bot", "text": response})
+
+        st.rerun()
 
 # ---------- FOOTER ----------
 st.markdown(
-    "<center style='margin-top:20px;color:#64748b;'>Built by MADARAPU RAVICHANDANA 🚀</center>",
+    "<center style='color:#64748b;margin-top:20px;'>Built by MADARAPU RAVICHANDANA 🚀</center>",
     unsafe_allow_html=True
 )
