@@ -3,27 +3,16 @@ import pickle
 import re
 import nltk
 import os
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
-# ✅ Setup NLTK data directory
-
+# NLTK setup
 nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
 nltk.data.path.append(nltk_data_path)
 
-# Download required datasets
 nltk.download('punkt', download_dir=nltk_data_path)
-nltk.download('punkt_tab', download_dir=nltk_data_path)  # 🔥 IMPORTANT FIX
+nltk.download('punkt_tab', download_dir=nltk_data_path)
 nltk.download('stopwords', download_dir=nltk_data_path)
-
-# ✅ Download ONLY if missing
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', download_dir=nltk_data_path)
-
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords', download_dir=nltk_data_path)
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -34,7 +23,6 @@ vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 
 stop_words = set(stopwords.words('english'))
 
-# Clean text
 def clean_text(text):
     text = text.lower()
     text = re.sub(r'[^a-zA-Z\s]', '', text)
@@ -43,23 +31,49 @@ def clean_text(text):
     return " ".join(tokens)
 
 # UI
-st.set_page_config(page_title="Sentiment Analyzer")
+st.set_page_config(page_title="Sentiment Analyzer", layout="centered")
 
-st.title("🎬 Movie Sentiment Analyzer")
+st.title("🎬 Advanced Sentiment Analyzer")
+st.write("Analyze reviews with NLP + Visualization")
 
-user_input = st.text_area("Enter your review:")
+# Input
+user_input = st.text_area("Enter one or multiple reviews (one per line):")
 
-if st.button("Predict"):
+if st.button("Analyze"):
     if user_input.strip() == "":
-        st.warning("Enter something!")
+        st.warning("Enter some text!")
     else:
-        cleaned = clean_text(user_input)
-        vec = vectorizer.transform([cleaned])
+        reviews = user_input.split("\n")
+        results = []
+        all_text = ""
 
-        pred = model.predict(vec)[0]
-        prob = model.predict_proba(vec)[0].max()
+        for review in reviews:
+            cleaned = clean_text(review)
+            vec = vectorizer.transform([cleaned])
+            pred = model.predict(vec)[0]
+            results.append(pred)
+            all_text += " " + cleaned
 
-        if pred == 1:
-            st.success(f"Positive 😊 ({round(prob*100,2)}%)")
-        else:
-            st.error(f"Negative 😞 ({round(prob*100,2)}%)")
+        # Display results
+        for i, review in enumerate(reviews):
+            if results[i] == 1:
+                st.success(f"👍 {review}")
+            else:
+                st.error(f"👎 {review}")
+
+        # 📊 Sentiment chart
+        st.subheader("📊 Sentiment Distribution")
+        pos = results.count(1)
+        neg = results.count(0)
+
+        st.bar_chart({"Positive": pos, "Negative": neg})
+
+        # ☁️ WordCloud
+        st.subheader("☁️ Word Cloud")
+        wordcloud = WordCloud(width=800, height=400, background_color='white').generate(all_text)
+
+        fig, ax = plt.subplots()
+        ax.imshow(wordcloud)
+        ax.axis("off")
+
+        st.pyplot(fig)
