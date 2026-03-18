@@ -3,6 +3,7 @@ import types
 
 # Fix for Python 3.13+ (imghdr removed)
 sys.modules['imghdr'] = types.ModuleType('imghdr')
+
 import streamlit as st
 import pickle
 import re
@@ -27,16 +28,23 @@ def clean_text(text):
     tokens = [w for w in tokens if w not in stop_words]
     return " ".join(tokens)
 
-st.title("🎬 Movie Sentiment Analyzer")
+# UI
+st.set_page_config(page_title="Sentiment Analyzer", page_icon="🎬")
 
-user_input = st.text_area("Enter a movie review:")
+st.title("🎬 Movie Sentiment Analyzer")
+st.write("Enter a movie review and get sentiment prediction")
+
+user_input = st.text_area("Enter review:")
 
 if st.button("Predict"):
-    cleaned = clean_text(user_input)
-    vec = vectorizer.transform([cleaned])
-    pred = model.predict(vec)
-
-    if pred[0] == 1:
-        st.success("Positive 😊")
+    if user_input.strip() == "":
+        st.warning("Please enter text")
     else:
-        st.error("Negative 😞")
+        cleaned = clean_text(user_input)
+        vec = vectorizer.transform([cleaned])
+        pred = model.predict(vec)
+
+        if pred[0] == 1:
+            st.success("Positive 😊")
+        else:
+            st.error("Negative 😞")
